@@ -1,5 +1,8 @@
 .container {
     position: relative;
+    width: 350px;
+    height: 628px;
+    background-image: url('images/background.jpg');
     background-size: cover;
     background-position: center; 
     background-repeat: no-repeat;
@@ -34,7 +37,7 @@
   }
 
   .child {
-    width: 300px;
+    width: 350px;
     height: 628px;
     position: absolute;
     top: 20%;
