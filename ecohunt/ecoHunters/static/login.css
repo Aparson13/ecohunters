@@ -2,7 +2,7 @@
     position: relative;
     width: 500px;
     height: 628px;
-    background-image: rgba(92, 132, 188, 0.25);
+    background-image: url('images/background.jpg');
     background-size: cover;
     background-position: center; 
     background-repeat: no-repeat;
