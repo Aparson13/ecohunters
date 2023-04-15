@@ -74,6 +74,7 @@ def login(request):
                     'correct':'User does not exist'
                 }
     return render(request, 'login.html', context)
+    
 
 def LeaderBoard(request):
     users = User.objects.all()

@@ -121,7 +121,6 @@
                     title: 'Selected location'
                 });
             
-            // Add an infowindow to the marker with the pop-up content
             reportInfowindow = new google.maps.InfoWindow({
                 content: '<h5>Select one or more options:</h5>' +
                         '<label><input type="checkbox" name="options" value="option1">Waste</label><br>' +
@@ -166,7 +165,30 @@ function savePinpoint(marker) {
         }
     }
     console.log('Selected options:', selectedOptions);
+
+    var newMarker = new google.maps.Marker({
+        position: reportMarker.getPosition(),
+        map: map,
+        title: 'Selected location'
+    });
+
+    var newInfowindow = new google.maps.InfoWindow({
+        content: '<h5>Report Details</h5>' +
+            '<div><strong>Latitude:</strong> ' + reportMarker.getPosition().lat() + '</div>' +
+            '<div><strong>Longitude:</strong> ' + reportMarker.getPosition().lng() + '</div>' +
+            '<div><strong>Options:</strong> ' + selectedOptions.join(', ') + '</div>' +
+            '<button onclick="editReportMarker(' + index + ')">Edit</button>' +
+            '<button onclick="removeReportMarker(' + index + ')">Remove</button>'
+    });
+
+    reportMarkers.push({
+        marker: newMarker,
+        infowindow: newInfowindow
+    });
+
     reportInfowindow.close();
+    reportMarker.setMap(null);
+
     toggleReporting();
 }
 
