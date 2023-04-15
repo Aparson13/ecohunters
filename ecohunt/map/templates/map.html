@@ -4,32 +4,59 @@
 <head>
     <title>Google Maps API</title>
     <style>
-        #map {
-            height: 100%;
-            width: 100%;
-        }
+#map-container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+#search-container {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    z-index: 1;
+}
+
+.report-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1;
+}
     </style>
-        <script>
-            function initMap() {
-                var map = new google.maps.Map(document.getElementById('map'), {
-                    center: {lat: 37.4316, lng: -78.6569},
-                    zoom: 7
-                });
-    
-                var geocoder = new google.maps.Geocoder();
-    
-                document.getElementById('search').addEventListener('click', function() {
-                    var city = document.getElementById('city').value;
-                    var state = document.getElementById('state').value;
-    
-                    if (city && state) {
-                        var address = city + ', ' + state;
-                        geocodeAddress(geocoder, map, address);
-                    } else {
-                        alert('Please enter a city and state.');
-                    }
-                });
-    
+<script>
+    var map;
+        var geocoder;
+        var markers = [];
+        var infowindows = [];
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: 37.4316, lng: -78.6569},
+                zoom: 7
+            });
+
+            geocoder = new google.maps.Geocoder();
+
+            document.getElementById('search').addEventListener('click', function() {
+                var city = document.getElementById('city').value;
+                var state = document.getElementById('state').value;
+
+                if (city && state) {
+                    var address = city + ', ' + state;
+                    geocodeAddress(geocoder, map, address);
+                } else {
+                    alert('Please enter a city and state.');
+                }
+            });
+
             // Get user's location and center the map on it
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
@@ -46,32 +73,117 @@
                         map: map,
                         title: 'You are here'
                     });
+                    markers.push(marker);
                 }, function() {
                     alert('Error: The Geolocation service failed.');
                 });
             } else {
                 alert('Error: Your browser doesn\'t support geolocation.');
             }
-        }
-    
-            function geocodeAddress(geocoder, resultsMap, address) {
-                geocoder.geocode({'address': address}, function(results, status) {
-                    if (status === 'OK') {
-                        resultsMap.setCenter(results[0].geometry.location);
-                        resultsMap.setZoom(17);
-                    } else {
-                        alert('Geocode was not successful for the following reason: ' + status);
+
+            // Add a click event listener to the map
+            map.addListener('click', function(e) {
+                placeMarker(e.latLng, map);
+            });
+
+            // Add a click event listener to the markers
+            map.addListener('click', function(e) {
+                for (var i = 0; i < markers.length; i++) {
+                    if (markers[i].getPosition().equals(e.latLng)) {
+                        toggleInfoWindow(i);
                     }
+                }
+            });
+        }
+
+        function geocodeAddress(geocoder, resultsMap, address) {
+            geocoder.geocode({'address': address}, function(results, status) {
+                if (status === 'OK') {
+                    resultsMap.setCenter(results[0].geometry.location);
+                    resultsMap.setZoom(17);
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        }
+
+        function placeMarker(location, map) {
+            if (document.getElementById('report-btn').innerHTML === 'Cancel') {
+                // Add a marker at the selected location
+                var marker = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: 'Selected location'
                 });
+                markers.push(marker);
+
+                // Add an infowindow to the marker
+                var infowindow = new google.maps.InfoWindow({
+                    content: '<button onclick="removeMarker(' + (markers.length - 1) + ')">Remove</button>'
+                });
+                infowindows.push(infowindow);
+
+                // Update the input fields with the latitude and longitude
+                document.getElementById('lat').value = location.lat();
+                document.getElementById('lng').value = location.lng();
             }
-        </script>
+        }
+
+        function removeMarkers() {
+            // Remove any existing markers from the map
+            markers.forEach(function(marker) {
+                marker.setMap(null);
+            });
+            markers = [];
+
+            // Remove any existing infowindows from the map
+            infowindows.forEach(function(infowindow) {
+                infowindow.close();
+            });
+            infowindows = [];
+        }
+
+        function toggleReporting() {
+            var reportBtn = document.getElementById('report-btn');
+            if (reportBtn.innerHTML === 'Report') {
+                reportBtn.innerHTML = 'Cancel';
+                map.addListener('click', placeMarker);
+            } else {
+                reportBtn.innerHTML = 'Report';
+                removeMarkers();
+                google.maps.event.clearListeners(map, 'click');
+            }
+        }
+
+        function toggleInfoWindow(index) {
+            var infowindow = infowindows[index];
+            if (!infowindow) {
+                return;
+            }
+            if (infowindow.getMap()) {
+                infowindow.close();
+            } else {
+                infowindow.open(map, markers[index]);
+            }
+        }
+
+        function removeMarker(index) {
+            markers[index].setMap(null);
+            markers.splice(index, 1);
+            infowindows[index].close();
+            infowindows.splice(index, 1);
+        }
+</script>
 </head>
 <body onload="initMap()">
-    <div>
-        <input type="text" id="city" placeholder="Enter a city" required>
-        <input type="text" id="state" placeholder="Enter a state" required>
-        <button id="search">Search</button>
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="search-container">
+            <input type="text" id="city" placeholder="Enter a city" required>
+            <input type="text" id="state" placeholder="Enter a state" required>
+            <button id="search">Search</button>
+        </div>
+        <button class="report-btn" id="report-btn" onclick="toggleReporting()">Report</button>
     </div>
-    <div id="map"></div>
 </body>
 </html>
