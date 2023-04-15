@@ -27,170 +27,234 @@
         .report-btn {
             position: absolute;
             top: 20px;
-            right: 20px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #heatmap-btn {
+            position: absolute;
+            top: 50px;
+            right: 50px;
             z-index: 1;
         }
     </style>
 <script>
-    var map;
-        var geocoder;
-        var markers = [];
-        var infowindows = [];
-        var reportMarker;
-        var reportInfowindow;
+var map;
+var geocoder;
+var markers = [];
+var infowindows = [];
+var reportMarker;
+var reportInfowindow;
 
-        var reportingEnabled = false;  
+var reportingEnabled = false;
+var reportMarkers = [];
+var index;
 
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: {lat: 37.4316, lng: -78.6569},
-                zoom: 7
-            });
+var heatmap;
+var heatmapData = [];
+var placeMarkerListener;
 
-            geocoder = new google.maps.Geocoder();
 
-            document.getElementById('search').addEventListener('click', function() {
-                var city = document.getElementById('city').value;
-                var state = document.getElementById('state').value;
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 37.4316, lng: -78.6569},
+            zoom: 7
+        });
 
-                if (city && state) {
-                    var address = city + ', ' + state;
-                    geocodeAddress(geocoder, map, address);
-                } else {
-                    alert('Please enter a city and state.');
-                }
-            });
+        geocoder = new google.maps.Geocoder();
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    var userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    map.setCenter(userLocation);
-                    map.setZoom(17);
+        document.getElementById('search').addEventListener('click', function() {
+            var city = document.getElementById('city').value;
+            var state = document.getElementById('state').value;
 
-                    var marker = new google.maps.Marker({
-                        position: userLocation,
-                        map: map,
-                        title: 'You Are Here'
-                    });
-                    markers.push(marker);
-                }, function() {
-                    alert('Error: The Geolocation service failed.');
-                });
+            if (city && state) {
+                var address = city + ', ' + state;
+                geocodeAddress(geocoder, map, address);
             } else {
-                alert('Error: Your browser doesn\'t support geolocation.');
+                alert('Please enter a city and state.');
             }
+        });
 
-            map.addListener('click', function(e) {
-                placeMarker(e.latLng, map);
-            });
-            map.addListener('click', function(e) {
-                for (var i = 0; i < markers.length; i++) {
-                    if (markers[i].getPosition().equals(e.latLng)) {
-                        toggleInfoWindow(i);
-                    }
-                }
-            });
-        }
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                map.setCenter(userLocation);
+                map.setZoom(17);
 
-        function geocodeAddress(geocoder, resultsMap, address) {
-            geocoder.geocode({'address': address}, function(results, status) {
-                if (status === 'OK') {
-                    resultsMap.setCenter(results[0].geometry.location);
-                    resultsMap.setZoom(17);
-                } else {
-                    alert('Geocode was not successful for the following reason: ' + status);
-                }
-            });
-        }
-        
-        function placeMarker(location, map) {
-            if (reportMarker) {
-                reportMarker.setMap(null);
-            }
-            if (reportInfowindow) {
-                reportInfowindow.close();
-            }
-            
-            if (document.getElementById('report-btn').innerHTML === 'Cancel') {
-                reportMarker = new google.maps.Marker({
-                    position: location,
+                var marker = new google.maps.Marker({
+                    position: userLocation,
                     map: map,
-                    title: 'Selected location'
+                    title: 'You Are Here'
                 });
-            
-            reportInfowindow = new google.maps.InfoWindow({
-                content: '<h5>Select one or more options:</h5>' +
-                        '<label><input type="checkbox" name="options" value="option1">Waste</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option2">Obstruction</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Energy Related</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Wild Life Issue</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Hazard</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Pollution</label><br>' +
-                        '<button onclick="removeMarker(reportMarker)">Cancel</button>' +
-                        '<button onclick="savePinpoint(reportMarker)">Save</button>'
+                markers.push(marker);
+            }, function() {
+                alert('Error: The Geolocation service failed.');
             });
-            
-            reportInfowindow.open(map, reportMarker);
-            
-                document.getElementById('lat').value = location.lat();
-                document.getElementById('lng').value = location.lng();
-                }
-            }
-
-        function toggleReporting() {
-            var reportBtn = document.getElementById('report-btn');
-            if (reportBtn.innerHTML === 'Report') {
-                reportBtn.innerHTML = 'Cancel';
-                map.addListener('click', placeMarker);
-            } else {
-                reportBtn.innerHTML = 'Report';
-                removeMarkers();
-                google.maps.event.clearListeners(map, 'click');
-            }
+        } else {
+            alert('Error: Your browser doesn\'t support geolocation.');
         }
 
-function removeMarker(marker) {
-    marker.setMap(null);
-}
+        map.addListener('click', function(e) {
+            placeMarker(e.latLng, map);
+        });
+        map.addListener('click', function(e) {
+            for (var i = 0; i < markers.length; i++) {
+                if (markers[i].getPosition().equals(e.latLng)) {
+                    toggleInfoWindow(i);
+                }
+            }
+        });
 
-function savePinpoint(marker) {
-    var options = document.getElementsByName('options');
-    var selectedOptions = [];
-    for (var i = 0; i < options.length; i++) {
-        if (options[i].checked) {
-            selectedOptions.push(options[i].value);
+        heatmap = new google.maps.visualization.HeatmapLayer({
+        data: heatmapData,
+        radius: 20,
+        opacity: 0.7
+        });
+        heatmap.setMap(null);
+        document.getElementById('heatmap-btn').addEventListener('click', toggleHeatmap);
+    }
+
+    function toggleHeatmap() {
+        if (!heatmap.getMap()) {
+            heatmap.setData(heatmapData);
+            heatmap.setMap(map);
+        } else {
+            heatmap.setMap(null);
         }
     }
-    console.log('Selected options:', selectedOptions);
 
-    var newMarker = new google.maps.Marker({
+    function geocodeAddress(geocoder, resultsMap, address) {
+        geocoder.geocode({'address': address}, function(results, status) {
+            if (status === 'OK') {
+                resultsMap.setCenter(results[0].geometry.location);
+                resultsMap.setZoom(17);
+            } else {
+                alert('Geocode was not successful for the following reason: ' + status);
+            }
+        });
+    }
+        
+    function toggleInfoWindow(index) {
+        if (infowindows[index].getMap()) {
+            infowindows[index].close();
+        } else {
+            infowindows[index].open(map, markers[index]);
+        }
+    }
+
+    function removeMarkers() {
+        for (var i = 0; i < markers.length; i++) {
+            markers[i].setMap(null);
+        }
+    }
+
+
+    function placeMarker(location, map) {
+        if (reportMarker) {
+            reportMarker.setMap(null);
+        }
+        if (reportInfowindow) {
+            reportInfowindow.close();
+        }
+        
+        if (document.getElementById('report-btn').innerHTML === 'Cancel') {
+            reportMarker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: 'Selected location'
+            });
+        
+        reportInfowindow = new google.maps.InfoWindow({
+            content: '<h5>Select one or more options:</h5>' +
+                    '<label><input type="checkbox" name="options" value="option1">Waste</label><br>' +
+                    '<label><input type="checkbox" name="options" value="option2">Obstruction</label><br>' +
+                    '<label><input type="checkbox" name="options" value="option3">Energy Related</label><br>' +
+                    '<label><input type="checkbox" name="options" value="option3">Wild Life Issue</label><br>' +
+                    '<label><input type="checkbox" name="options" value="option3">Hazard</label><br>' +
+                    '<label><input type="checkbox" name="options" value="option3">Pollution</label><br>' +
+                    '<button onclick="removeMarker(reportMarker)">Cancel</button>' +
+                    '<button onclick="savePinpoint(reportMarker)">Save</button>'
+        });
+        
+        reportInfowindow.open(map, reportMarker);
+        
+            document.getElementById('lat').value = location.lat();
+            document.getElementById('lng').value = location.lng();
+        }
+    }
+
+    function toggleReporting() {
+        var reportBtn = document.getElementById('report-btn');
+        if (reportBtn.innerHTML === 'Report') {
+            reportBtn.innerHTML = 'Cancel';
+            placeMarkerListener = map.addListener('click', function(e) {
+                placeMarker(e.latLng, map);
+            });
+            } else {
+                reportBtn.innerHTML = 'Report';
+                if (reportMarker) {
+                    reportMarker.setMap(null);
+                }
+                if (reportInfowindow) {
+                    reportInfowindow.close();
+                }
+                if (placeMarkerListener) {
+                    google.maps.event.removeListener(placeMarkerListener);
+                }
+            }
+    }
+
+    function removeMarker(marker) {
+        marker.setMap(null);
+    }
+
+    function savePinpoint(marker) {
+        var options = document.getElementsByName('options');
+        var selectedOptions = [];
+        
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].checked) {
+                selectedOptions.push(options[i].value);
+            }
+        }
+        console.log('Selected options:', selectedOptions);
+        index = reportMarkers.length;
+        var newMarker = new google.maps.Marker({
         position: reportMarker.getPosition(),
         map: map,
-        title: 'Selected location'
-    });
+        title: 'Selected location',
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: '#00f',
+            fillOpacity: 1,
+            strokeWeight: 0
+        }
+        });
 
-    var newInfowindow = new google.maps.InfoWindow({
-        content: '<h5>Report Details</h5>' +
-            '<div><strong>Latitude:</strong> ' + reportMarker.getPosition().lat() + '</div>' +
-            '<div><strong>Longitude:</strong> ' + reportMarker.getPosition().lng() + '</div>' +
-            '<div><strong>Options:</strong> ' + selectedOptions.join(', ') + '</div>' +
-            '<button onclick="editReportMarker(' + index + ')">Edit</button>' +
-            '<button onclick="removeReportMarker(' + index + ')">Remove</button>'
-    });
+        var newInfowindow = new google.maps.InfoWindow({
+            content: '<h5>Report Details</h5>' +
+                '<div><strong>Latitude:</strong> ' + reportMarker.getPosition().lat() + '</div>' +
+                '<div><strong>Longitude:</strong> ' + reportMarker.getPosition().lng() + '</div>' +
+                '<div><strong>Options:</strong> ' + selectedOptions.join(', ') + '</div>' +
+                '<button onclick="editReportMarker(' + index + ')">Edit</button>' +
+                '<button onclick="removeReportMarker(' + index + ')">Remove</button>'
+        });
 
-    reportMarkers.push({
-        marker: newMarker,
-        infowindow: newInfowindow
-    });
+        reportMarkers.push({
+            marker: newMarker,
+            infowindow: newInfowindow
+        });
 
-    reportInfowindow.close();
-    reportMarker.setMap(null);
-
-    toggleReporting();
-}
+        reportInfowindow.close();
+        reportMarker.setMap(null);
+        toggleReporting();
+        heatmapData.push(newMarker.getPosition());
+        heatmap.setData(heatmapData);
+    }
 
 </script>
 </head>
@@ -203,6 +267,7 @@ function savePinpoint(marker) {
             <button id="search">Search</button>
         </div>
         <button class="report-btn" id="report-btn" onclick="toggleReporting()">Report</button>
+        <button id="heatmap-btn" id="report-btn">Toggle Heatmap</button>
     </div>
 
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -217,5 +282,9 @@ function savePinpoint(marker) {
           </div>
         </div>
       </div>
+
+      <script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRLVNTg8r2nOYdAynEj7-FXwZQ4M1Wimg&libraries=visualization&callback=initMap">
+</script>
 </body>
 </html>
