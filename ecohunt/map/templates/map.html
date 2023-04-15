@@ -4,38 +4,42 @@
 <head>
     <title>Google Maps API</title>
     <style>
-#map-container {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-}
+        #map-container {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
 
-#map {
-    height: 100%;
-    width: 100%;
-}
+        #map {
+            height: 100%;
+            width: 100%;
+        }
 
-#search-container {
-    position: absolute;
-    top: 80px;
-    left: 20px;
-    z-index: 1;
-}
+        #search-container {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            z-index: 1;
+        }
 
-.report-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 1;
-}
+        .report-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1;
+        }
     </style>
 <script>
     var map;
         var geocoder;
         var markers = [];
         var infowindows = [];
+        var reportMarker;
+        var reportInfowindow;
+
+        var reportingEnabled = false;  
 
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
@@ -57,7 +61,6 @@
                 }
             });
 
-            // Get user's location and center the map on it
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
                     var userLocation = {
@@ -67,11 +70,10 @@
                     map.setCenter(userLocation);
                     map.setZoom(17);
 
-                    // Add a marker at the user's location
                     var marker = new google.maps.Marker({
                         position: userLocation,
                         map: map,
-                        title: 'You are here'
+                        title: 'You Are Here'
                     });
                     markers.push(marker);
                 }, function() {
@@ -81,12 +83,9 @@
                 alert('Error: Your browser doesn\'t support geolocation.');
             }
 
-            // Add a click event listener to the map
             map.addListener('click', function(e) {
                 placeMarker(e.latLng, map);
             });
-
-            // Add a click event listener to the markers
             map.addListener('click', function(e) {
                 for (var i = 0; i < markers.length; i++) {
                     if (markers[i].getPosition().equals(e.latLng)) {
@@ -106,42 +105,41 @@
                 }
             });
         }
-
+        
         function placeMarker(location, map) {
+            if (reportMarker) {
+                reportMarker.setMap(null);
+            }
+            if (reportInfowindow) {
+                reportInfowindow.close();
+            }
+            
             if (document.getElementById('report-btn').innerHTML === 'Cancel') {
-                // Add a marker at the selected location
-                var marker = new google.maps.Marker({
+                reportMarker = new google.maps.Marker({
                     position: location,
                     map: map,
                     title: 'Selected location'
                 });
-                markers.push(marker);
-
-                // Add an infowindow to the marker
-                var infowindow = new google.maps.InfoWindow({
-                    content: '<button onclick="removeMarker(' + (markers.length - 1) + ')">Remove</button>'
-                });
-                infowindows.push(infowindow);
-
-                // Update the input fields with the latitude and longitude
+            
+            // Add an infowindow to the marker with the pop-up content
+            reportInfowindow = new google.maps.InfoWindow({
+                content: '<h5>Select one or more options:</h5>' +
+                        '<label><input type="checkbox" name="options" value="option1">Waste</label><br>' +
+                        '<label><input type="checkbox" name="options" value="option2">Obstruction</label><br>' +
+                        '<label><input type="checkbox" name="options" value="option3">Energy Related</label><br>' +
+                        '<label><input type="checkbox" name="options" value="option3">Wild Life Issue</label><br>' +
+                        '<label><input type="checkbox" name="options" value="option3">Hazard</label><br>' +
+                        '<label><input type="checkbox" name="options" value="option3">Pollution</label><br>' +
+                        '<button onclick="removeMarker(reportMarker)">Cancel</button>' +
+                        '<button onclick="savePinpoint(reportMarker)">Save</button>'
+            });
+            
+            reportInfowindow.open(map, reportMarker);
+            
                 document.getElementById('lat').value = location.lat();
                 document.getElementById('lng').value = location.lng();
+                }
             }
-        }
-
-        function removeMarkers() {
-            // Remove any existing markers from the map
-            markers.forEach(function(marker) {
-                marker.setMap(null);
-            });
-            markers = [];
-
-            // Remove any existing infowindows from the map
-            infowindows.forEach(function(infowindow) {
-                infowindow.close();
-            });
-            infowindows = [];
-        }
 
         function toggleReporting() {
             var reportBtn = document.getElementById('report-btn');
@@ -155,24 +153,23 @@
             }
         }
 
-        function toggleInfoWindow(index) {
-            var infowindow = infowindows[index];
-            if (!infowindow) {
-                return;
-            }
-            if (infowindow.getMap()) {
-                infowindow.close();
-            } else {
-                infowindow.open(map, markers[index]);
-            }
-        }
+function removeMarker(marker) {
+    marker.setMap(null);
+}
 
-        function removeMarker(index) {
-            markers[index].setMap(null);
-            markers.splice(index, 1);
-            infowindows[index].close();
-            infowindows.splice(index, 1);
+function savePinpoint(marker) {
+    var options = document.getElementsByName('options');
+    var selectedOptions = [];
+    for (var i = 0; i < options.length; i++) {
+        if (options[i].checked) {
+            selectedOptions.push(options[i].value);
         }
+    }
+    console.log('Selected options:', selectedOptions);
+    reportInfowindow.close();
+    toggleReporting();
+}
+
 </script>
 </head>
 <body onload="initMap()">
@@ -185,5 +182,18 @@
         </div>
         <button class="report-btn" id="report-btn" onclick="toggleReporting()">Report</button>
     </div>
+
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">New Pinpoint</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer" id="modal-footer"></div>
+          </div>
+        </div>
+      </div>
 </body>
 </html>
