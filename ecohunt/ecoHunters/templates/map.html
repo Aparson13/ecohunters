@@ -1,7 +1,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRLVNTg8r2nOYdAynEj7-FXwZQ4M1Wimg"></script>
 <!DOCTYPE html>
 <html>
-
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
@@ -75,6 +75,32 @@
             top: 50px;
             right: 50px;
             z-index: 1;
+        }
+
+        #legend {
+            background-color: white;
+            border: 1px solid #999;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            position: absolute;
+            top: 900px;
+            left: 10px;
+            z-index: 1;
+        }
+
+        #legend h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        #legend table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #legend td {
+            padding: 5px;
+            vertical-align: middle;
         }
     </style>
 <script>
@@ -206,14 +232,14 @@ var placeMarkerListener;
                 title: 'Selected location'
             });
         
-        reportInfowindow = new google.maps.InfoWindow({
-            content: '<h5>Select one or more options:</h5>' +
-                    '<label><input type="checkbox" name="options" value="option1">Waste</label><br>' +
-                    '<label><input type="checkbox" name="options" value="option2">Obstruction</label><br>' +
-                    '<label><input type="checkbox" name="options" value="option3">Energy Related</label><br>' +
-                    '<label><input type="checkbox" name="options" value="option3">Wild Life Issue</label><br>' +
-                    '<label><input type="checkbox" name="options" value="option3">Hazard</label><br>' +
-                    '<label><input type="checkbox" name="options" value="option3">Pollution</label><br>' +
+            reportInfowindow = new google.maps.InfoWindow({
+            content: '<h5>Select one option:</h5>' +
+                    '<label><input type="radio" name="options" value="option1">Waste</label><br>' +
+                    '<label><input type="radio" name="options" value="option2">Obstruction</label><br>' +
+                    '<label><input type="radio" name="options" value="option3">Energy Related</label><br>' +
+                    '<label><input type="radio" name="options" value="option4">Wild Life Issue</label><br>' +
+                    '<label><input type="radio" name="options" value="option5">Hazard</label><br>' +
+                    '<label><input type="radio" name="options" value="option6">Pollution</label><br>' +
                     '<button onclick="removeMarker(reportMarker)">Cancel</button>' +
                     '<button onclick="savePinpoint(reportMarker)">Save</button>'
         });
@@ -250,51 +276,72 @@ var placeMarkerListener;
         marker.setMap(null);
     }
 
+    function getSelectedOptionIcon(optionValue) {
+    var iconSize = new google.maps.Size(34, 34);
+
+    var icon = {
+        option1: "{% static 'images/waste.png' %}",
+        option2: "{% static 'images/obstruction.png' %}",
+        option3: "{% static 'images/lightning.png' %}",
+        option4: "{% static 'images/camel.png' %}",
+        option5: "{% static 'images/hazard.png' %}",
+        option6: "{% static 'images/air-pollution.png' %}"
+    };
+
+    return {
+        url: icon[optionValue],
+        scaledSize: iconSize
+    };
+}
+
+
     function savePinpoint(marker) {
-        var options = document.getElementsByName('options');
-        var selectedOptions = [];
-        
-        for (var i = 0; i < options.length; i++) {
-            if (options[i].checked) {
-                selectedOptions.push(options[i].value);
-            }
+    var options = document.getElementsByName('options');
+    var selectedOption;
+    var iconUrl;
+
+    for (var i = 0; i < options.length; i++) {
+        if (options[i].checked) {
+            selectedOption = options[i].value;
+            break;
         }
-        console.log('Selected options:', selectedOptions);
-        index = reportMarkers.length;
-        var newMarker = new google.maps.Marker({
+    }
+
+    if (!selectedOption) {
+        alert('Please select an option.');
+        return;
+    }
+
+    iconUrl = getSelectedOptionIcon(selectedOption);
+    index = reportMarkers.length;
+
+    var newMarker = new google.maps.Marker({
         position: reportMarker.getPosition(),
         map: map,
         title: 'Selected location',
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 6,
-            fillColor: '#00f',
-            fillOpacity: 1,
-            strokeWeight: 0
-        }
-        });
+        icon: iconUrl
+    });
 
-        var newInfowindow = new google.maps.InfoWindow({
-            content: '<h5>Report Details</h5>' +
-                '<div><strong>Latitude:</strong> ' + reportMarker.getPosition().lat() + '</div>' +
-                '<div><strong>Longitude:</strong> ' + reportMarker.getPosition().lng() + '</div>' +
-                '<div><strong>Options:</strong> ' + selectedOptions.join(', ') + '</div>' +
-                '<button onclick="editReportMarker(' + index + ')">Edit</button>' +
-                '<button onclick="removeReportMarker(' + index + ')">Remove</button>'
-        });
+    var newInfowindow = new google.maps.InfoWindow({
+        content: '<h5>Report Details</h5>' +
+            '<div><strong>Latitude:</strong> ' + reportMarker.getPosition().lat() + '</div>' +
+            '<div><strong>Longitude:</strong> ' + reportMarker.getPosition().lng() + '</div>' +
+            '<div><strong>Option:</strong> ' + selectedOption + '</div>' +
+            '<button onclick="editReportMarker(' + index + ')">Edit</button>' +
+            '<button onclick="removeReportMarker(' + index + ')">Remove</button>'
+    });
 
-        reportMarkers.push({
-            marker: newMarker,
-            infowindow: newInfowindow
-        });
+    reportMarkers.push({
+        marker: newMarker,
+        infowindow: newInfowindow
+    });
 
-        reportInfowindow.close();
-        reportMarker.setMap(null);
-        toggleReporting();
-        heatmapData.push(newMarker.getPosition());
-        heatmap.setData(heatmapData);
-    }
-
+    reportInfowindow.close();
+    reportMarker.setMap(null);
+    toggleReporting();
+    heatmapData.push(newMarker.getPosition());
+    heatmap.setData(heatmapData);
+}
 </script>
 </head>
 <body onload="initMap()">
@@ -320,6 +367,36 @@ var placeMarkerListener;
             <div class="modal-footer" id="modal-footer"></div>
           </div>
         </div>
+      </div>
+
+      <div id="legend">
+        <h3>Icon Legend</h3>
+        <table>
+          <tr>
+            <td><img src="{% static 'images/waste.png' %}" width="34" height="34" alt="Waste"></td>
+            <td>Waste</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/obstruction.png' %}" width="34" height="34" alt="Obstruction"></td>
+            <td>Obstruction</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/lightning.png' %}" width="34" height="34" alt="Energy Related"></td>
+            <td>Energy Related</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/camel.png' %}" width="34" height="34" alt="Wild Life Issue"></td>
+            <td>Wild Life Issue</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/hazard.png' %}" width="34" height="34" alt="Hazard"></td>
+            <td>Hazard</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/air-pollution.png' %}" width="34" height="34" alt="Pollution"></td>
+            <td>Pollution</td>
+          </tr>
+        </table>
       </div>
 
       <script async
