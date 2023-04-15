@@ -1,5 +1,4 @@
 from django.db import models
-
 from django.contrib.auth.models import AbstractUser
 from django.views.generic import ListView
 
@@ -19,8 +18,4 @@ class Leaderboard(ListView):
 
     def get_queryset(self):
         return User.objects.order_by('-score')[:10]
-
-
-
-
 

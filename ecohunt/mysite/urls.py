@@ -20,4 +20,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('ecoHunters.urls')),
     path('ecoHunters/', include('ecoHunters.urls')),
+    path('map/', include('map.urls')),
 ]
