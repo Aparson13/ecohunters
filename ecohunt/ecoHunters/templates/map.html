@@ -1,7 +1,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRLVNTg8r2nOYdAynEj7-FXwZQ4M1Wimg"></script>
 <!DOCTYPE html>
 <html>
-
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
@@ -66,156 +66,319 @@
         .report-btn {
             position: absolute;
             top: 20px;
-            right: 20px;
+            right: 50px;
             z-index: 1;
+        }
+
+        #heatmap-btn {
+            position: absolute;
+            top: 60px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #change-gradient-btn {
+            position: absolute;
+            top: 100px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #change-radius-btn {
+            position: absolute;
+            top: 140px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #change-opacity-btn {
+            position: absolute;
+            top: 180px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #legend {
+            background-color: white;
+            border: 1px solid #999;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            position: absolute;
+            top: 900px;
+            left: 10px;
+            z-index: 1;
+        }
+
+        #legend h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        #legend table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #legend td {
+            padding: 5px;
+            vertical-align: middle;
         }
     </style>
 <script>
-    var map;
-        var geocoder;
-        var markers = [];
-        var infowindows = [];
-        var reportMarker;
-        var reportInfowindow;
+var map;
+var geocoder;
+var markers = [];
+var infowindows = [];
+var reportMarker;
+var reportInfowindow;
 
-        var reportingEnabled = false;  
+var reportingEnabled = false;
+var reportMarkers = [];
+var index;
 
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: {lat: 37.4316, lng: -78.6569},
-                zoom: 7
-            });
+var heatmap;
+var heatmapData = [];
+var placeMarkerListener;
 
-            geocoder = new google.maps.Geocoder();
 
-            document.getElementById('search').addEventListener('click', function() {
-                var city = document.getElementById('city').value;
-                var state = document.getElementById('state').value;
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 37.4316, lng: -78.6569},
+            zoom: 7
+        });
 
-                if (city && state) {
-                    var address = city + ', ' + state;
-                    geocodeAddress(geocoder, map, address);
-                } else {
-                    alert('Please enter a city and state.');
-                }
-            });
+        geocoder = new google.maps.Geocoder();
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    var userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    map.setCenter(userLocation);
-                    map.setZoom(17);
+        document.getElementById('search').addEventListener('click', function() {
+            var city = document.getElementById('city').value;
+            var state = document.getElementById('state').value;
 
-                    var marker = new google.maps.Marker({
-                        position: userLocation,
-                        map: map,
-                        title: 'You Are Here'
-                    });
-                    markers.push(marker);
-                }, function() {
-                    alert('Error: The Geolocation service failed.');
-                });
+            if (city && state) {
+                var address = city + ', ' + state;
+                geocodeAddress(geocoder, map, address);
             } else {
-                alert('Error: Your browser doesn\'t support geolocation.');
+                alert('Please enter a city and state.');
             }
+        });
 
-            map.addListener('click', function(e) {
-                placeMarker(e.latLng, map);
-            });
-            map.addListener('click', function(e) {
-                for (var i = 0; i < markers.length; i++) {
-                    if (markers[i].getPosition().equals(e.latLng)) {
-                        toggleInfoWindow(i);
-                    }
-                }
-            });
-        }
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                map.setCenter(userLocation);
+                map.setZoom(17);
 
-        function geocodeAddress(geocoder, resultsMap, address) {
-            geocoder.geocode({'address': address}, function(results, status) {
-                if (status === 'OK') {
-                    resultsMap.setCenter(results[0].geometry.location);
-                    resultsMap.setZoom(17);
-                } else {
-                    alert('Geocode was not successful for the following reason: ' + status);
-                }
-            });
-        }
-        
-        function placeMarker(location, map) {
-            if (reportMarker) {
-                reportMarker.setMap(null);
-            }
-            if (reportInfowindow) {
-                reportInfowindow.close();
-            }
-            
-            if (document.getElementById('report-btn').innerHTML === 'Cancel') {
-                reportMarker = new google.maps.Marker({
-                    position: location,
+                var marker = new google.maps.Marker({
+                    position: userLocation,
                     map: map,
-                    title: 'Selected location'
+                    title: 'You Are Here'
                 });
-            
-            reportInfowindow = new google.maps.InfoWindow({
-                content: '<h5>Select one or more options:</h5>' +
-                        '<label><input type="checkbox" name="options" value="option1">Waste</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option2">Obstruction</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Energy Related</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Wild Life Issue</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Hazard</label><br>' +
-                        '<label><input type="checkbox" name="options" value="option3">Pollution</label><br>' +
-                        '<button onclick="removeMarker(reportMarker)">Cancel</button>' +
-                        '<button onclick="savePinpoint(reportMarker)">Save</button>'
+                markers.push(marker);
+            }, function() {
+                alert('Error: The Geolocation service failed.');
             });
-            
-            reportInfowindow.open(map, reportMarker);
-            
-                document.getElementById('lat').value = location.lat();
-                document.getElementById('lng').value = location.lng();
-                }
-            }
-
-        function toggleReporting() {
-            var reportBtn = document.getElementById('report-btn');
-            if (reportBtn.innerHTML === 'Report') {
-                reportBtn.innerHTML = 'Cancel';
-                map.addListener('click', placeMarker);
-            } else {
-                reportBtn.innerHTML = 'Report';
-                removeMarkers();
-                google.maps.event.clearListeners(map, 'click');
-            }
+        } else {
+            alert('Error: Your browser doesn\'t support geolocation.');
         }
 
-function removeMarker(marker) {
-    marker.setMap(null);
-}
+        map.addListener('click', function(e) {
+            placeMarker(e.latLng, map);
+        });
+        map.addListener('click', function(e) {
+            for (var i = 0; i < markers.length; i++) {
+                if (markers[i].getPosition().equals(e.latLng)) {
+                    toggleInfoWindow(i);
+                }
+            }
+        });
 
-function savePinpoint(marker) {
-    var options = document.getElementsByName('options');
-    var selectedOptions = [];
-    for (var i = 0; i < options.length; i++) {
-        if (options[i].checked) {
-            selectedOptions.push(options[i].value);
+        heatmap = new google.maps.visualization.HeatmapLayer({
+        data: heatmapData,
+        radius: 20,
+        opacity: 0.7
+        });
+        heatmap.setMap(null);
+        document.getElementById('heatmap-btn').addEventListener('click', toggleHeatmap);
+        document.getElementById("change-gradient-btn").addEventListener("click", changeGradient);
+        document.getElementById("change-radius-btn").addEventListener("click", changeRadius);
+        document.getElementById("change-opacity-btn").addEventListener("click", changeOpacity);
+    }
+
+    function toggleHeatmap() {
+        if (!heatmap.getMap()) {
+            heatmap.setData(heatmapData);
+            heatmap.setMap(map);
+        } else {
+            heatmap.setMap(null);
         }
     }
-    console.log('Selected options:', selectedOptions);
+
+    function changeGradient() {
+    var gradient = [
+        "rgba(0, 255, 255, 0)",
+        "rgba(0, 255, 255, 1)",
+        "rgba(0, 191, 255, 1)",
+        "rgba(0, 127, 255, 1)",
+        "rgba(0, 63, 255, 1)",
+        "rgba(0, 0, 255, 1)",
+        "rgba(0, 0, 223, 1)",
+        "rgba(0, 0, 191, 1)",
+        "rgba(0, 0, 159, 1)",
+        "rgba(0, 0, 127, 1)",
+        "rgba(63, 0, 91, 1)",
+        "rgba(127, 0, 63, 1)",
+        "rgba(191, 0, 31, 1)",
+        "rgba(255, 0, 0, 1)"
+    ];
+    heatmap.set("gradient", heatmap.get("gradient") ? null : gradient);
+}
+
+function changeRadius() {
+    heatmap.set("radius", heatmap.get("radius") ? null : 40);
+}
+
+function changeOpacity() {
+    heatmap.set("opacity", heatmap.get("opacity") ? null : 0.6);
+}
+
+    function geocodeAddress(geocoder, resultsMap, address) {
+        geocoder.geocode({'address': address}, function(results, status) {
+            if (status === 'OK') {
+                resultsMap.setCenter(results[0].geometry.location);
+                resultsMap.setZoom(17);
+            } else {
+                alert('Geocode was not successful for the following reason: ' + status);
+            }
+        });
+    }
+        
+    function toggleInfoWindow(index) {
+        if (infowindows[index].getMap()) {
+            infowindows[index].close();
+        } else {
+            infowindows[index].open(map, markers[index]);
+        }
+    }
+
+    function removeMarkers() {
+        for (var i = 0; i < markers.length; i++) {
+            markers[i].setMap(null);
+        }
+    }
+
+
+    function placeMarker(location, map) {
+        if (reportMarker) {
+            reportMarker.setMap(null);
+        }
+        if (reportInfowindow) {
+            reportInfowindow.close();
+        }
+        
+        if (document.getElementById('report-btn').innerHTML === 'Cancel') {
+            reportMarker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: 'Selected location'
+            });
+        
+            reportInfowindow = new google.maps.InfoWindow({
+            content: '<h5>Select one option:</h5>' +
+                    '<label><input type="radio" name="options" value="option1">Waste</label><br>' +
+                    '<label><input type="radio" name="options" value="option2">Obstruction</label><br>' +
+                    '<label><input type="radio" name="options" value="option3">Energy Related</label><br>' +
+                    '<label><input type="radio" name="options" value="option4">Wild Life Issue</label><br>' +
+                    '<label><input type="radio" name="options" value="option5">Hazard</label><br>' +
+                    '<label><input type="radio" name="options" value="option6">Pollution</label><br>' +
+                    '<button onclick="removeMarker(reportMarker)">Cancel</button>' +
+                    '<button onclick="savePinpoint(reportMarker)">Save</button>'
+        });
+        
+        reportInfowindow.open(map, reportMarker);
+        
+            document.getElementById('lat').value = location.lat();
+            document.getElementById('lng').value = location.lng();
+        }
+    }
+
+    function toggleReporting() {
+        var reportBtn = document.getElementById('report-btn');
+        if (reportBtn.innerHTML === 'Report') {
+            reportBtn.innerHTML = 'Cancel';
+            placeMarkerListener = map.addListener('click', function(e) {
+                placeMarker(e.latLng, map);
+            });
+            } else {
+                reportBtn.innerHTML = 'Report';
+                if (reportMarker) {
+                    reportMarker.setMap(null);
+                }
+                if (reportInfowindow) {
+                    reportInfowindow.close();
+                }
+                if (placeMarkerListener) {
+                    google.maps.event.removeListener(placeMarkerListener);
+                }
+            }
+    }
+
+    function removeMarker(marker) {
+        marker.setMap(null);
+    }
+
+    function getSelectedOptionIcon(optionValue) {
+    var iconSize = new google.maps.Size(34, 34);
+
+    var icon = {
+        option1: "{% static 'images/waste.png' %}",
+        option2: "{% static 'images/obstruction.png' %}",
+        option3: "{% static 'images/lightning.png' %}",
+        option4: "{% static 'images/camel.png' %}",
+        option5: "{% static 'images/hazard.png' %}",
+        option6: "{% static 'images/air-pollution.png' %}"
+    };
+
+    return {
+        url: icon[optionValue],
+        scaledSize: iconSize
+    };
+}
+
+
+    function savePinpoint(marker) {
+    var options = document.getElementsByName('options');
+    var selectedOption;
+    var iconUrl;
+
+    for (var i = 0; i < options.length; i++) {
+        if (options[i].checked) {
+            selectedOption = options[i].value;
+            break;
+        }
+    }
+
+    if (!selectedOption) {
+        alert('Please select an option.');
+        return;
+    }
+
+    iconUrl = getSelectedOptionIcon(selectedOption);
+    index = reportMarkers.length;
 
     var newMarker = new google.maps.Marker({
         position: reportMarker.getPosition(),
         map: map,
-        title: 'Selected location'
+        title: 'Selected location',
+        icon: iconUrl
     });
 
     var newInfowindow = new google.maps.InfoWindow({
         content: '<h5>Report Details</h5>' +
             '<div><strong>Latitude:</strong> ' + reportMarker.getPosition().lat() + '</div>' +
             '<div><strong>Longitude:</strong> ' + reportMarker.getPosition().lng() + '</div>' +
-            '<div><strong>Options:</strong> ' + selectedOptions.join(', ') + '</div>' +
+            '<div><strong>Option:</strong> ' + selectedOption + '</div>' +
             '<button onclick="editReportMarker(' + index + ')">Edit</button>' +
             '<button onclick="removeReportMarker(' + index + ')">Remove</button>'
     });
@@ -227,9 +390,12 @@ function savePinpoint(marker) {
 
     reportInfowindow.close();
     reportMarker.setMap(null);
-
     toggleReporting();
+    heatmapData.push(newMarker.getPosition());
+    heatmap.setData(heatmapData);
 }
+
+
 
 </script>
 </head>
@@ -242,6 +408,10 @@ function savePinpoint(marker) {
             <button id="search">Search</button>
         </div>
         <button class="report-btn" id="report-btn" onclick="toggleReporting()">Report</button>
+        <button id="heatmap-btn" id="report-btn">Toggle Heatmap</button>
+        <button id="change-gradient-btn">Change Gradient</button>
+        <button id="change-radius-btn">Change Radius</button>
+        <button id="change-opacity-btn">Change Opacity</button>
     </div>
 
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -256,5 +426,39 @@ function savePinpoint(marker) {
           </div>
         </div>
       </div>
+
+      <div id="legend">
+        <h3>Icon Legend</h3>
+        <table>
+          <tr>
+            <td><img src="{% static 'images/waste.png' %}" width="34" height="34" alt="Waste"></td>
+            <td>Waste</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/obstruction.png' %}" width="34" height="34" alt="Obstruction"></td>
+            <td>Obstruction</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/lightning.png' %}" width="34" height="34" alt="Energy Related"></td>
+            <td>Energy Related</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/camel.png' %}" width="34" height="34" alt="Wild Life Issue"></td>
+            <td>Wild Life Issue</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/hazard.png' %}" width="34" height="34" alt="Hazard"></td>
+            <td>Hazard</td>
+          </tr>
+          <tr>
+            <td><img src="{% static 'images/air-pollution.png' %}" width="34" height="34" alt="Pollution"></td>
+            <td>Pollution</td>
+          </tr>
+        </table>
+      </div>
+
+      <script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRLVNTg8r2nOYdAynEj7-FXwZQ4M1Wimg&libraries=visualization&callback=initMap">
+</script>
 </body>
 </html>
