@@ -1,0 +1,45 @@
+.container {
+    position: relative;
+    width: 500px;
+    height: 628px;
+    background-image: rgba(92, 132, 188, 0.25);    
+    background-size: cover;
+    background-position: center; 
+    background-repeat: no-repeat;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+
+    font-family: arial;
+    font-size: 24px;
+    margin: 25px;
+    display: flex;
+    justify-content: right;
+  }
+  
+  .error-message{
+    padding-top: 3px;
+    color: red;
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    text-align: center;
+  }
+
+  .form-group{
+    padding-top: 20px;
+  }
+  .Create-Account{
+    padding-top: 20px;
+  }
+
+  .signIn{
+    font-family: arial;
+    font-size: 14px;
+    padding-top: 5px;
+  }
+  
+  .child {
+    width: 400px;
+    height: 628px;
+    position: absolute;
+    top: 15%;
+    right: 13%;
+  }
