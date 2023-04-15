@@ -72,7 +72,28 @@
 
         #heatmap-btn {
             position: absolute;
-            top: 50px;
+            top: 60px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #change-gradient-btn {
+            position: absolute;
+            top: 100px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #change-radius-btn {
+            position: absolute;
+            top: 140px;
+            right: 50px;
+            z-index: 1;
+        }
+
+        #change-opacity-btn {
+            position: absolute;
+            top: 180px;
             right: 50px;
             z-index: 1;
         }
@@ -180,6 +201,9 @@ var placeMarkerListener;
         });
         heatmap.setMap(null);
         document.getElementById('heatmap-btn').addEventListener('click', toggleHeatmap);
+        document.getElementById("change-gradient-btn").addEventListener("click", changeGradient);
+        document.getElementById("change-radius-btn").addEventListener("click", changeRadius);
+        document.getElementById("change-opacity-btn").addEventListener("click", changeOpacity);
     }
 
     function toggleHeatmap() {
@@ -190,6 +214,34 @@ var placeMarkerListener;
             heatmap.setMap(null);
         }
     }
+
+    function changeGradient() {
+    var gradient = [
+        "rgba(0, 255, 255, 0)",
+        "rgba(0, 255, 255, 1)",
+        "rgba(0, 191, 255, 1)",
+        "rgba(0, 127, 255, 1)",
+        "rgba(0, 63, 255, 1)",
+        "rgba(0, 0, 255, 1)",
+        "rgba(0, 0, 223, 1)",
+        "rgba(0, 0, 191, 1)",
+        "rgba(0, 0, 159, 1)",
+        "rgba(0, 0, 127, 1)",
+        "rgba(63, 0, 91, 1)",
+        "rgba(127, 0, 63, 1)",
+        "rgba(191, 0, 31, 1)",
+        "rgba(255, 0, 0, 1)"
+    ];
+    heatmap.set("gradient", heatmap.get("gradient") ? null : gradient);
+}
+
+function changeRadius() {
+    heatmap.set("radius", heatmap.get("radius") ? null : 40);
+}
+
+function changeOpacity() {
+    heatmap.set("opacity", heatmap.get("opacity") ? null : 0.6);
+}
 
     function geocodeAddress(geocoder, resultsMap, address) {
         geocoder.geocode({'address': address}, function(results, status) {
@@ -342,6 +394,9 @@ var placeMarkerListener;
     heatmapData.push(newMarker.getPosition());
     heatmap.setData(heatmapData);
 }
+
+
+
 </script>
 </head>
 <body onload="initMap()">
@@ -354,6 +409,9 @@ var placeMarkerListener;
         </div>
         <button class="report-btn" id="report-btn" onclick="toggleReporting()">Report</button>
         <button id="heatmap-btn" id="report-btn">Toggle Heatmap</button>
+        <button id="change-gradient-btn">Change Gradient</button>
+        <button id="change-radius-btn">Change Radius</button>
+        <button id="change-opacity-btn">Change Opacity</button>
     </div>
 
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
