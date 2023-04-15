@@ -4,9 +4,9 @@ from django.contrib.auth.models import AbstractUser
 from django.views.generic import ListView
 
 class User(AbstractUser):
-    firstname = models.CharField(max_length=70, blank=True, null=True)
-    lastname = models.CharField(max_length=70, blank=True, null=True)
+    name = models.CharField(max_length=70, blank=True, null=True)
     username = models.CharField(max_length=70, blank=True, null=True, unique=True)
+    password = models.CharField(max_length=100)
     score = models.IntegerField(default = 0)
 
     def __str__(self):

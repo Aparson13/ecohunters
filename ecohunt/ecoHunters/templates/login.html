@@ -33,11 +33,13 @@
 
                 <div class="Sign-In">
                     <button type="submit" class="btn btn-primary">Sign in</button>
-                    <p>{{ correct }}</p>
                 </div>
             </form> 
             <div class = "signUp">
                 <a href="{% url 'signup' %}" class="link-primary">Create an Account</a>
+            </div>
+            <div class = "status">
+                <p>{{ correct }}</p>
             </div>
         </div>
     </div>
